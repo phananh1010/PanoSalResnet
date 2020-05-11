@@ -21,4 +21,4 @@ fps_dict = {1:{'paris': 59.94, 'roller': 29, 'timelapse': 30, 'venise': 25, 'div
 
 topic_dict = {1: ['paris', 'roller', 'venise', 'diving', 'timelapse'],
               2: ['0', '1', '2', '3', '4', '5part1', '6part1', '7', '8'], #remove 5 & 6 since those are stored in multiple files
-              3: ['coaster2', 'diving', 'drive', 'game', 'landscape', 'pacman', 'ride', 'sport']}
+              3: ['coaster2', 'diving2', 'drive', 'game', 'landscape', 'pacman', 'ride', 'sport']}

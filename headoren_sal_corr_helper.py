@@ -6,10 +6,18 @@ import header_headoren_salcorr as header
 import saldat_head_orientation
 import head_orientation_lib
 
+#THIS FILE CONTAINS CLASSES RESPONSIBLE FOR MANAGING VECTOR_DS, MATCHING VECTOR_DS WITH SALIENCY FOR CORRELATION PURPOSE
+#ALSO, IT HAS HEADOREN AS A PROPERTY, THUS, IT IS USE IT TO HANDLE SALIENCY MAPS, IF POSSIBLE
+
+#
+    
+##############    
+
 class HeadorenSalCorrHelper:
     
-    PATH_SALIENCY_GT       = './data/pano-saliency/saliency_ds{}_topic{}'
-    PATH_SALIENCY_PRED     = './data/pano-saliency-pred152-step002-iter891/saliency_ds{}_topic{}'
+    #PATH_SALIENCY_GT       = './data/pano-saliency-merge/saliency_ds{}_topic{}'
+    #PATH_SALIENCY_PRED     = './data/pano-saliency-45x80merge-pred101-step002-iter418/saliency_ds{}_topic{}'
+    #PATH_SALIENCY_PRED     = './data/pano-saliency-45x80mergepreddirectly-pred152-step002-iter197/saliency_ds{}_topic{}'
     
     PATH_SAL_ACTIVITY_GT   = './data/sal_activity_gt_dict'
     PATH_SAL_ACTIVITY_PRED = './data/sal_activity_pred_dict'
@@ -17,23 +25,29 @@ class HeadorenSalCorrHelper:
     PATH_MEAN_SALMAP_GT    = './data/mean_salmap_gt'
     PATH_MEAN_SALMAP_PRED  = './data/mean_salmap_pred'
     
-    def __init__(self, saldat_dict, vector_ds_dict, saliency_mode):
-        #exp list: exp1(27, 40), exp2_temp(25, 50), exp3(15?, 20), exp4(5, 10), exp5(99, 99), exp6(2, 5), exp7_temp(1, 16), exp8_temp(100, 200)
-        print (f'NOTE, for predicted sal, will use: {self.PATH_SALIENCY_PRED}')
-        self.saliency_mode = saliency_mode
-        self.thres_list_temporal = (25, 50)#(1, 16)exp7#(25, 50)exp2, (100, 200)exp8
-        self.thres_list_spatial = (27, 40)#exp1(27, 40)exp4(5, 10)
-        self.thres_list_spatial_full = (99, 99)#exp5,
+
+    
+    def __init__(self, saldat_dict, vector_ds_dict, saliency_mode, path_saliency_gt, path_saliency_pred):
+        self.name = "HeadorenSalCorrHelper"
         
+        self.saliency_mode = saliency_mode
         if saliency_mode not in {'groundtruth', 'predicted'}:
             print ('ERROR, saliency_mode must be either "groundtruth" or "predicted"')
             raise
+            
+        self.PATH_SALIENCY_GT = path_saliency_gt
+        self.PATH_SALIENCY_PRED = path_saliency_pred
+        #must specify mode (groundtruth or predicted)
+        #self._saliency_ds_gt_filepath = './data/pano-saliency/saliency_ds{}_topic{}'
+        #self._saliency_ds_pred_filepath = './data/pano-saliency-pred/saliency_ds{}_topic{}'
+        
         #keep headoren variable internally
         print ('LOG: initilize headoren')
         self.headoren = saldat_head_orientation.HeadOrientation(header.dirpath1, header.dirpath2, header.dirpath3, header.ext1, header.ext2, header.ext3)
-                
+        
+        ##this one specifically just for step 2 of our project   
         print ('LOG: loading topic dict')
-        self.tdict          = header.topic_dict
+        self.tdict   = header.topic_dict
         
         print ('LOG: initilize saldat dict & vector ds dict')
         self.saldat_dict    = saldat_dict
@@ -60,10 +74,22 @@ class HeadorenSalCorrHelper:
             self.sactivity_dict = pickle.load(open(self.sactivity_path, 'rb'))
         except:
             self.create_sactivity_dict()
-
+            
     #GENERIC INITILIZATION
     def f_create_key(self, ds, topic):
         return '{}_{}'.format(ds, topic)
+    
+    def f_parse_key(self, k):
+        return k.split('_')
+    
+    def create_exp_dictkey(self, f_ds, s_ds, f_topic, s_topic):
+        return '{}_{}_{}_{}'.format(f_ds, s_ds, f_topic, s_topic)
+
+    def parse_exp_dictkey(self, k):
+        f_ds, s_ds, f_topic, s_topic = k.split('_')
+        f_ds = int(f_ds)
+        s_ds = int(s_ds)
+        return f_ds, s_ds, f_topic, s_topic
     
     def f_load_saldat_dict(self, ds, topic):
         k = self.f_create_key(ds, topic)
@@ -112,14 +138,19 @@ class HeadorenSalCorrHelper:
         return vector_ds
 
     def f_load_vector_ds(self, f_ds, f_topic):
-        if f_topic == '5part1':
-            f_topic = '5'
-        elif f_topic == '6part1':
-            f_topic = '6'
-        dirpath, filename_list, f_parse, f_extract_direction = \
-                                    self.headoren.load_filename_list(f_ds, f_topic)
-        series_ds = self.headoren.load_series_ds(filename_list, f_parse)
-        vector_ds = self.headoren.headpos_to_headvec(series_ds, f_extract_direction)
+#         #only this code should have this if since it must conform the public format
+#         #need to remove in fugure
+#         if f_topic == '5part1':
+#             f_topic = '5'
+#         elif f_topic == '6part1':
+#             f_topic = '6'
+#         elif f_ds == 3 and f_topic == 'diving2':
+#             f_topic = 'diving'
+#         dirpath, filename_list, f_parse, f_extract_direction = \
+#                                     self.headoren.load_filename_list(f_ds, f_topic)
+#         series_ds = self.headoren.load_series_ds(filename_list, f_parse)
+#         vector_ds = self.headoren.headpos_to_headvec(series_ds, f_extract_direction)
+        vector_ds = self.headoren.load_vector_ds(dataset, topic)
         vector_ds = self.filter_vector_ds(vector_ds)
         return vector_ds
 
@@ -211,7 +242,7 @@ class HeadorenSalCorrHelper:
         #       then show the time of fixation right after saccade is cutoff
         result = []
         #cut_vec = self.headoren.cutoff_vel_acc_compliment([vec], dataset, thres_list=(15, 30))[0]
-        cut_vec = self.headoren.cutoff_vel_acc_compliment([vec], dataset, thres_list=self.thres_list_temporal)[0]
+        cut_vec = self.headoren.cutoff_vel_acc_compliment([vec], dataset, thres_list=(25, 50))[0]
         t_list = [item[0] for item in cut_vec if item[0] > 5.]
         for idx, _ in enumerate(t_list[:-1]):
             result.append((idx+1, t_list[idx+1]))
@@ -286,17 +317,7 @@ class HeadorenSalCorrHelper:
         #TODO: call cutoff_vec_acc to cut the saccade, 
         #       then show the time of fixation right after saccade is cutoff
         result = []
-        cut_vec = self.headoren.cutoff_vel_acc([vec], dataset, thres_list=self.thres_list_spatial)[0]
-        t_list = [item[0] for item in cut_vec if item[0] > 5.]
-        for idx, _ in enumerate(t_list[:-1]):
-            result.append((idx, t_list[idx]))
-        return result
-    
-    def find_fixation_spatial_full(self, vec, dataset, delta=0.17):
-        #TODO: call cutoff_vec_acc to cut the saccade, 
-        #       then show the time of fixation right after saccade is cutoff
-        result = []
-        cut_vec = self.headoren.cutoff_vel_acc([vec], dataset, thres_list=self.thres_list_spatial_full)[0]
+        cut_vec = self.headoren.cutoff_vel_acc([vec], dataset, thres_list=(27, 40))[0]
         t_list = [item[0] for item in cut_vec if item[0] > 5.]
         for idx, _ in enumerate(t_list[:-1]):
             result.append((idx, t_list[idx]))
@@ -385,21 +406,25 @@ class HeadorenSalCorrHelper:
 
         return self.salcorr(viz_dat, f_window0, s_window0), viz_dat
     
-    def video_headm_spatialcorr_full(self, f_ds, f_topic, s_ds, s_topic, uid, f_T0=5, s_T0=5, N=300):
-        #TODO: calculate the correlation between head orientation & saliency maps
-        #INPUT: ds, topic, & data dict
-        #OUTPUT: the array of correlation coefficient
-        self.f_load_vector_ds_dict(f_ds, f_topic)
-        vector_ds = self.vector_ds_dict[self.f_create_key(f_ds, f_topic)]
-        self.f_load_saldat_dict(s_ds, s_topic)
-        sal_dat = self.saldat_dict[self.f_create_key(s_ds, s_topic)]
-
-        f_timestamp, f_window0 = self.extract_fixation_window(vector_ds, f_ds, uid, f_T0, N)
-        s_timestamp, s_window0 = self.extract_salmap_window(sal_dat, s_T0, N)
-        cut_idxlist, cut_timelist = list(zip(*self.find_fixation_spatial_full(vector_ds[uid], f_ds)))
-
-        #GOINT BACK TO USING FIXATION AFTER SACCADE TO EXATRACT SPATIAL CORRELATION
-        #_, cut_timelist1 = self.filter_array(cut_timelist, f_T0, 999)
-        viz_dat = self.extract_fixation(cut_timelist, f_timestamp, s_timestamp, delta=0.08)
-
-        return self.salcorr(viz_dat, f_window0, s_window0), viz_dat
+    
+class HeadorenSalCorrStep2Helper(HeadorenSalCorrHelper):
+    #NOTE: vector_ds & fixation maps collected are from 
+    #SOURCE_VECTOR_DS_GROUNDTRUTH = 'groundtruth'
+    #SOURCE_VECTOR_DS_PREDICTED = 'predicted'
+    
+    def __init__ (self, saldat_dict, vector_ds_dict, vector_ds_source_mode, saliency_mode, path_saliency_gt, path_saliency_pred):
+        HeadorenSalCorrHelper.__init__(self, saldat_dict, vector_ds_dict, saliency_mode)
+        self.name = "HeadorenSalCorrStep2Helper"
+        self.headoren = saldat_head_orientation.HeadOrientationStep2(vector_ds_source_mode)
+        self.tdict  = header.topic_step2_dict
+        
+    def f_load_vector_ds(self, f_ds, f_topic):
+#         if f_topic == '5part1':
+#             f_topic = '5'
+#         elif f_topic == '6part1':
+#             f_topic = '6'
+        
+        vector_ds = self.headoren.load_vector_ds(f_ds, f_topic)
+        vector_ds = self.filter_vector_ds(vector_ds)
+        return vector_ds            
+                

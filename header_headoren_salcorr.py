@@ -6,7 +6,7 @@ ext2 = '.csv'
 ext3 = '.csv'
 topic_dict = {1: ['paris', 'roller', 'venise', 'diving', 'timelapse'],
               2: ['0', '1', '2', '3', '4', '5part1', '6part1', '7', '8'], #remove 5 & 6 since those are stored in multiple files
-              3: ['coaster2', 'diving2', 'drive', 'game', 'landscape', 'pacman', 'ride', 'sport']}
+              3: ['coaster2', 'diving2', 'drive', 'game', 'landscape', 'pacman', 'panel', 'ride', 'sport']}
 
 
 h = 90

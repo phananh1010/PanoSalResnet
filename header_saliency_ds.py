@@ -4,7 +4,9 @@ TARGET_SAL_H = 45
 TARGET_SAL_W = 80
 TARGET_STANDARD_SAL_H = 90
 TARGET_STANDARD_SAL_W = 180
-TARGET_GAUSSIAN_BLUR = 19
+TARGET_GAUSSIAN_BLUR = 9  #previously 19
+
+BATCH_SIZE = 4
 
 fps_dict = {'paris': 59.94, 'roller': 29, 'timelapse': 30, 'venise': 25, 'diving': 29, \
            '0': 29.97, '1': 29.97, '2': 30, '3': 29.97, '4': 29.97, \
@@ -21,4 +23,5 @@ fps_dict = {1:{'paris': 59.94, 'roller': 29, 'timelapse': 30, 'venise': 25, 'div
 
 topic_dict = {1: ['paris', 'roller', 'venise', 'diving', 'timelapse'],
               2: ['0', '1', '2', '3', '4', '5part1', '6part1', '7', '8'], #remove 5 & 6 since those are stored in multiple files
-              3: ['coaster2', 'diving2', 'drive', 'game', 'landscape', 'pacman', 'ride', 'sport']}
+              3: ['coaster2', 'diving2', 'drive', 'game', 'landscape', 'pacman', 'panel', 'ride', 'sport']}
+

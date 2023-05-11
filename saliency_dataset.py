@@ -1,4 +1,6 @@
 import pickle
+import glob
+import os
 import imp
 import numpy as np
 import cv2
@@ -167,19 +169,32 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
     FILETEMPLATE_DS_DCNN_TEST = '{}/ds_dcnn_expdistance_test'
     FILETEMPLATE_DS_DCNN_FULL = '{}/ds_dcnn_expdistance_full'
     
-    def __init__(self, tdict, sal_dict, fps_dict, MODE):
+    DS_BACKGROUND = 0
+    
+    def get_topic_background(self):
+        fp_list = glob.glob(self.DIRPATH_VIDEO_BACKGROUND + '/frames/*')
+        vidid_list = []
+        for fp in fp_list:
+            filename, ext = os.path.splitext(fp)
+            basename = os.path.basename(filename)
+            vidid_list.append(basename)
+        return {self.DS_BACKGROUND: vidid_list}
+    
+    def __init__(self, MODE):
         #GOAL: prepare dataset to train saliency predictor (resnet model)
         #TODO: create ds_full file 
         #INPUT: pano-saliency folder & pano-vid/frames folder
         #OUTPUT: ds_full file storing ALL (image & fixation input) & saliency ground truth
                 #ds_train_step file storing file, with steps
-        self.tdict = tdict
-        self.saldat_dict = sal_dict
+        self.tdict = header.topic_dict
+        self.tdict.update(self.get_topic_background())
+        self.saldat_dict = {}
         self.vector_ds_dict = {}
-        self.fps_dict = fps_dict
+        self.fps_dict = header.fps_dict
+        self.fps_dict.update({0:{vid:30 for vid in self.tdict[self.DS_BACKGROUND]}})
         self.helper_salgt = headoren_sal_corr_helper.HeadorenSalCorrHelper(self.saldat_dict, self.vector_ds_dict, MODE, self.PATH_SALIENCY_GT, self.PATH_SALIENCY_PRED)
     
-    def get_frame_filepath(topic):
+    def get_frame_filepath(self, topic, frameid):
         if topic in header.topic_list:
             return f'{self.DIRPATH_VIDEO}/frames/{topic}_{frameid:04d}.jpg'
         else:
@@ -191,8 +206,19 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
             topic = 'diving2'
         fps = self.fps_dict[ds][topic]
         frameid = int(t0 * fps)
-        frame_filepath = 
+        frame_filepath = self.get_frame_filepath(topic, frameid)
         image = plt.imread(frame_filepath)
         if resize==True:
             image = cv2.resize(image, (header.TARGET_IMG_W, header.TARGET_IMG_H))
         return image, frame_filepath   
+    
+    def get_sample(self, ds, topic, t0):
+            img, img_fp = self.get_image(ds, topic, t0)
+            if ds in set([1, 2, 3]):
+                convert_dict = {'5part1':'5', '6part1':'6'}
+                self.helper_salgt.f_load_saldat_dict(ds, topic)
+                saldat = self.helper_salgt.saldat_dict[self.helper_salgt.f_create_key(ds, topic)]
+                smap = self.get_saliencymap(saldat, ds, topic, t0)
+            else:
+                smap = None
+            return img, smap

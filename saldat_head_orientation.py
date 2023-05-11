@@ -6,7 +6,7 @@ from pyquaternion import Quaternion
 from sklearn import model_selection
 from sklearn import metrics
 from sklearn.cluster import DBSCAN
-from sklearn.datasets.samples_generator import make_blobs
+from sklearn.datasets import make_blobs
 from sklearn.preprocessing import StandardScaler
 
 import head_orientation_lib

@@ -165,11 +165,12 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
     DIRPATH_VIDEO_BACKGROUND = './data/pano-videos-background'
     DIRPATH_SALIENCY = '../hmd-observe-video-prediction/data/pano-saliency-merge'
     #output
-    FILETEMPLATE_DS_DCNN_STEP = '{}/ds_dcnn_expdistance_step{}'
-    FILETEMPLATE_DS_DCNN_TEST = '{}/ds_dcnn_expdistance_test'
-    FILETEMPLATE_DS_DCNN_FULL = '{}/ds_dcnn_expdistance_full'
+    FILETEMPLATE_DS_DCNN_STEP = '{}/dsbg_dcnn_expdistance_step{}'
+    FILETEMPLATE_DS_DCNN_TEST = '{}/dsbg_dcnn_expdistance_test'
+    FILETEMPLATE_DS_DCNN_FULL = '{}/dsbg_dcnn_expdistance_full'
     
     DS_BACKGROUND = 0
+    FPS           = 10
     
     def get_topic_background(self):
         fp_list = glob.glob(self.DIRPATH_VIDEO_BACKGROUND + '/frames/*')
@@ -191,7 +192,7 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
         self.saldat_dict = {}
         self.vector_ds_dict = {}
         self.fps_dict = header.fps_dict
-        self.fps_dict.update({0:{vid:30 for vid in self.tdict[self.DS_BACKGROUND]}})
+        self.fps_dict.update({0:{vid:self.FPS for vid in self.tdict[self.DS_BACKGROUND]}})
         self.helper_salgt = headoren_sal_corr_helper.HeadorenSalCorrHelper(self.saldat_dict, self.vector_ds_dict, MODE, self.PATH_SALIENCY_GT, self.PATH_SALIENCY_PRED)
     
     def get_frame_filepath(self, topic, frameid):
@@ -222,3 +223,31 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
             else:
                 smap = None
             return img, smap
+        
+    def gen_train_dataset(self, step):
+        print ("this class don't to gen train dataset, sorry")
+        raise
+        
+    def gen_whole_dataset(self):
+        tdict = header.topic_dict
+        time_dict = {1:{}, 2:{}, 3:{}, 0:{}}
+        for ds in self.tdict:
+            for topic in self.tdict[ds]:
+                if topic in set([1, 2, 3]):
+                    in_filename = self.PATH_SALIENCY_GT.format(ds, topic)
+                    dat = pickle.load(open(in_filename, 'rb'))
+                    time_dict[ds][topic] = [item[0] for item in dat]
+                else:
+                    time_dict[ds][topic] = list(np.arange(1, 60, 0.06))
+        salpred_ds =[]
+        for ds in self.tdict:
+            for topic in self.tdict[ds]:
+                k = self.helper_salgt.f_create_key(ds, topic)
+                try:
+                    for t0 in time_dict[ds][topic]:
+                        img, smap = self.get_sample(ds, topic, t0)
+                        salpred_ds.append(((ds, topic, t0), img, smap))
+                except Exception as e:
+                    print (f"Error at :{ds} - {topic} - {t0} - {e}")
+                    continue
+        pickle.dump(salpred_ds, open(self.FILETEMPLATE_DS_DCNN_FULL.format(self.DIRPATH_SALIENCY), 'wb'))

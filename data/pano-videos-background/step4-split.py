@@ -3,6 +3,8 @@ import glob
 import sys
 import os
 
+
+
 os.system('mkdir frames')
 
 fp_list = glob.glob('./vid-cut/*.mp4')
@@ -14,6 +16,8 @@ for fp in fp_list:
     os.system(f"mkdir ./frames/{filename}")
     
     ## split frames, put into ./frames/{filename} folder
-    cmd2 = f'ffmpeg -i ./vid-cut/{basename} ./frames/{filename}/%04d.jpg -hide_banner'
+    cmd2 = f'/usr/bin/ffmpeg -i ./vid-cut/{basename} ./frames/{filename}/%04d.jpg -hide_banner'
     print (f"executing: {cmd2}")
     os.system(cmd2)
+
+os.system('which ffmpeg')

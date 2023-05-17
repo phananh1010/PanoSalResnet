@@ -22,7 +22,7 @@ print ('changing file name of downloaded video, starting at 0')
 file = open('./filename-mapping.txt', 'a')
 for fp in fp0_list:
     filename, ext = os.path.splitext(fp)
-    dfname = f'./vid-renamed/vid-{idx0}{ext}'
+    dfname = f'./vid-renamed/vid{idx0}{ext}'
     print (f"cp \'{fp}\' {dfname}")
     os.system(f"cp \"{fp}\" {dfname}")
     file.write(f'{fp}\t{dfname}\n')

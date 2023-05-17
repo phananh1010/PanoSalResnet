@@ -170,7 +170,7 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
     FILETEMPLATE_DS_DCNN_FULL = '{}/dsbg_dcnn_expdistance_full'
     
     DS_BACKGROUND = 0
-    FPS           = 10
+    FPS           = 30
     
     def get_topic_background(self):
         fp_list = glob.glob(self.DIRPATH_VIDEO_BACKGROUND + '/frames/*')
@@ -187,7 +187,7 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
         #INPUT: pano-saliency folder & pano-vid/frames folder
         #OUTPUT: ds_full file storing ALL (image & fixation input) & saliency ground truth
                 #ds_train_step file storing file, with steps
-        self.tdict = header.topic_dict
+        self.tdict = {}#header.topic_dict
         self.tdict.update(self.get_topic_background())
         self.saldat_dict = {}
         self.vector_ds_dict = {}
@@ -210,7 +210,10 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
         frame_filepath = self.get_frame_filepath(topic, frameid)
         image = plt.imread(frame_filepath)
         if resize==True:
-            image = cv2.resize(image, (header.TARGET_IMG_W, header.TARGET_IMG_H))
+            if topic in set([1, 2, 3]):
+                image = cv2.resize(image, (header.TARGET_IMG_W, header.TARGET_IMG_H))
+            else: 
+                image = cv2.resize(image, (header.TARGET_IMG_W//2, header.TARGET_IMG_H//2))
         return image, frame_filepath   
     
     def get_sample(self, ds, topic, t0):
@@ -221,7 +224,7 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
                 saldat = self.helper_salgt.saldat_dict[self.helper_salgt.f_create_key(ds, topic)]
                 smap = self.get_saliencymap(saldat, ds, topic, t0)
             else:
-                smap = None
+                smap = -1
             return img, smap
         
     def gen_train_dataset(self, step):
@@ -238,12 +241,13 @@ class SaliencyDatasetFull(SalnetDatasetGenerator):
                     dat = pickle.load(open(in_filename, 'rb'))
                     time_dict[ds][topic] = [item[0] for item in dat]
                 else:
-                    time_dict[ds][topic] = list(np.arange(1, 60, 0.06))
+                    time_dict[ds][topic] = list(np.arange(1, 60, 1.0))
         salpred_ds =[]
         for ds in self.tdict:
             for topic in self.tdict[ds]:
                 k = self.helper_salgt.f_create_key(ds, topic)
                 try:
+                    print (f'getting saliency & image pair for ds:{ds}, topic: {topic}')
                     for t0 in time_dict[ds][topic]:
                         img, smap = self.get_sample(ds, topic, t0)
                         salpred_ds.append(((ds, topic, t0), img, smap))

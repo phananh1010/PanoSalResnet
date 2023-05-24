@@ -3,22 +3,31 @@ import os
 import sys
 
 #TODO: move all downloaded files from vid-raw to vid-renamed
-fp0_list = sorted(glob.glob('vid-raw/*'))
-fp1_list = sorted(glob.glob('vid-renamed/*'))
+fp0_list = sorted(glob.glob('vid-raw/*.mp4'))
+fp1_list = sorted(glob.glob('vid-cut/*.mp4'))
 
 #########################check the id of the files in vid-rename folder
 
 if len(fp1_list) == 0:
     idx0 = 0
 else:
-    filename, ext = os.path.splitext(fp1_list[-1])
-    idx0 = int(filename.split('-')[-1])#we assume file name is vid-{idx}, so split '_' gives us the id
-    
-print ('changing file name of downloaded video, starting at 0')
+    #get the max id of the video
+    vid_list = []
+    for fp1 in fp1_list:
+        filepath, ext = os.path.splitext(fp1)
+        filename = filepath.split('/')[-1]
+        print (fp1, filepath, filename)
+        idxitem = int(filename.replace('.mp4', '').replace('vid', ''))#we assume file name is vid-{idx}, so split '_' gives us the id
+        vid_list.append(idxitem)
+        #print (fp1, filename, idxitem)
+    vid_list = sorted(vid_list)
+    idx0 = vid_list[-1]
+    #print (vid_list)
+print (f'changing file name of downloaded video, starting at {idx0}')
 
 ########################move all raw files from vid-raw to vid-rename####
 
-#move raw files from vid-raw to vid-renamed
+########move raw files from vid-raw to vid-renamed
 file = open('./filename-mapping.txt', 'a')
 for fp in fp0_list:
     filename, ext = os.path.splitext(fp)

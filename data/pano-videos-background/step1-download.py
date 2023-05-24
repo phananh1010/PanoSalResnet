@@ -22,6 +22,8 @@ vid_list = vid_list - vid0_list
 
 
 ##################download all new videos    ####################
+os.system('cd ./vid-raw/')
 for vid in vid_list:
     print (f'downloading: {vid}')
     os.system(f"yt-dlp -f worst[ext=mp4] --no-check-certificate --user-agent \'\' {vid}")
+os.system('cd ..')
